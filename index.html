@@ -521,7 +521,7 @@
         <p class="hint">
           Row 1 is each runner's total time for that stage; row 2 is the
           cumulative time through that stage, so the value under
-          <strong>Stage 5</strong> is the overall competition time. Runners are
+          <strong>Etapp 5</strong> is the overall competition time. Runners are
           ordered fastest first. Only the core four appear here — stage-only
           guests are excluded.
         </p>
@@ -890,7 +890,7 @@
           for (const sp of series.stageSpans) {
             const cx = sc.xOf((sp.startX + sp.endX) / 2);
             parts.push(
-              `<text x="${cx}" y="${axisY + 20}" text-anchor="middle" font-size="12" fill="var(--text-secondary)">Stage ${sp.stage + 1}</text>`,
+              `<text x="${cx}" y="${axisY + 20}" text-anchor="middle" font-size="12" fill="var(--text-secondary)">Etapp ${sp.stage + 1}</text>`,
             );
           }
         } else {
@@ -903,7 +903,7 @@
               col.x === 0
                 ? "0"
                 : col.ctrl === stages[col.stage].numControls
-                  ? "F"
+                  ? "M"
                   : col.ctrl;
             parts.push(
               `<text x="${x}" y="${axisY + 20}" text-anchor="middle" font-size="12" fill="var(--muted)">${lab}</text>`,
@@ -965,8 +965,8 @@
         attachHover(svg, series, sc, combined);
 
         document.getElementById("chartTitle").textContent = combined
-          ? "All stages combined — versus Superman"
-          : `Stage ${activeTab + 1} — versus Superman`;
+          ? "Total — versus Superman"
+          : `Etapp ${activeTab + 1} — versus Superman`;
         document.getElementById("chartSub").textContent = combined
           ? "Cumulative time behind the ideal race across all 5 stages (seconds)"
           : "Time behind the ideal race, cumulative (seconds)";
@@ -1039,10 +1039,10 @@
           head.className = "tt-head";
           const isFinish =
             xi !== 0 && col.ctrl === stages[col.stage].numControls;
-          const ctrlText = isFinish ? "Finish" : "Control " + col.ctrl;
+          const ctrlText = isFinish ? "Mål" : "Kontroll " + col.ctrl;
           if (xi === 0) head.textContent = "Start";
           else if (combined)
-            head.textContent = `Stage ${col.stage + 1} · ${ctrlText}`;
+            head.textContent = `Etapp ${col.stage + 1} · ${ctrlText}`;
           else head.textContent = ctrlText;
           tooltip.appendChild(head);
 
@@ -1088,7 +1088,7 @@
         nav.innerHTML = "";
         for (let s = 0; s < NUM_STAGES; s++) {
           const b = document.createElement("button");
-          b.textContent = "Stage " + (s + 1);
+          b.textContent = "Etapp " + (s + 1);
           if (activeTab === s) b.classList.add("active");
           if (!loadStatus[s].ok) b.classList.add("missing");
           b.addEventListener("click", () => setTab(s));
@@ -1100,7 +1100,7 @@
 
         const cb = document.createElement("button");
         cb.className = "combined" + (activeTab === COMBINED ? " active" : "");
-        cb.textContent = "Combined (all 5)";
+        cb.textContent = "Totalresultat";
         cb.addEventListener("click", () => setTab(COMBINED));
         nav.appendChild(cb);
       }
@@ -1162,14 +1162,16 @@
         const missing = loadStatus
           .map((s, i) => (s.ok ? null : i + 1))
           .filter((x) => x);
-        statusEl.className = missing.length ? "stage-status err" : "stage-status";
+        statusEl.className = missing.length
+          ? "stage-status err"
+          : "stage-status";
         statusEl.textContent = missing.length
           ? `Stages not loaded: ${missing.join(", ")} — totals for those are blank.`
           : "Total time per stage, with the running competition total beneath.";
 
         const head = ["<thead><tr><th></th><th>Runner</th>"];
         for (let s = 1; s <= NUM_STAGES; s++)
-          head.push(`<th class="val">Stage ${s}</th>`);
+          head.push(`<th class="val">Etapp ${s}</th>`);
         head.push("</tr></thead>");
 
         // Superman total per stage (its ideal race = sum of fastest legs)
@@ -1178,7 +1180,10 @@
             ok = true;
           for (let c = 0; c < st.numControls; c++) {
             const v = supermanForLeg(st, c);
-            if (v == null) { ok = false; break; }
+            if (v == null) {
+              ok = false;
+              break;
+            }
             sec += v;
           }
           return ok
@@ -1199,7 +1204,12 @@
             overall += sec;
             return { sec, text: fmtClock(sec), blank: false, auto: false };
           });
-          return { color: seriesColor(ri), name, values, total: complete ? overall : Infinity };
+          return {
+            color: seriesColor(ri),
+            name,
+            values,
+            total: complete ? overall : Infinity,
+          };
         });
         rows.sort((a, b) => a.total - b.total);
 
@@ -1239,7 +1249,7 @@
         const head = ["<thead><tr><th></th><th>Runner</th>"];
         for (let c = 1; c <= st.numControls; c++)
           head.push(
-            `<th class="val">${c === st.numControls ? "F" : "C" + c}</th>`,
+            `<th class="val">${c === st.numControls ? "M" : "K" + c}</th>`,
           );
         head.push("</tr></thead>");
 
@@ -1293,14 +1303,20 @@
         const runnerRows = [];
         RUNNER_NAMES.forEach((name, ri) => {
           const { values, total } = buildValues(st.splits[ri]);
-          runnerRows.push({ color: seriesColor(ri), name, note: undefined, values, total });
+          runnerRows.push({
+            color: seriesColor(ri),
+            name,
+            note: undefined,
+            values,
+            total,
+          });
         });
         st.extras.forEach((ex, j) => {
           const { values, total } = buildValues(ex.splits);
           runnerRows.push({
             color: seriesColor(RUNNER_NAMES.length + j),
             name: ex.name,
-            note: "this stage only",
+            note: "",
             values,
             total,
           });
