@@ -35,29 +35,8 @@
         --warn-bg: #fdf3e0;
         --warn-bd: #eda100;
       }
-      @media (prefers-color-scheme: dark) {
-        :root:where(:not([data-theme="light"])) {
-          color-scheme: dark;
-          --page: #0d0d0d;
-          --surface-1: #1a1a19;
-          --text-primary: #fff;
-          --text-secondary: #c3c2b7;
-          --muted: #898781;
-          --grid: #2c2c2a;
-          --axis: #383835;
-          --border: rgba(255, 255, 255, 0.1);
-          --series-1: #3987e5;
-          --series-2: #008300;
-          --series-3: #d55181;
-          --series-4: #c98500;
-          --series-5: #199e70;
-          --series-6: #d95926;
-          --series-7: #9085e9;
-          --series-8: #e66767;
-          --warn-bg: #2a2412;
-          --warn-bd: #c98500;
-        }
-      }
+      /* Light is the default theme. Dark applies only when the user turns it
+         on (data-theme="dark") — the OS setting no longer forces dark. */
       :root[data-theme="dark"] {
         color-scheme: dark;
         --page: #0d0d0d;
@@ -208,10 +187,8 @@
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         font-size: 12.5px;
       }
-      @media (prefers-color-scheme: dark) {
-        .banner code {
-          background: rgba(255, 255, 255, 0.1);
-        }
+      :root[data-theme="dark"] .banner code {
+        background: rgba(255, 255, 255, 0.1);
       }
 
       .card {
@@ -1340,7 +1317,7 @@
           if (t === "dark") return true;
           if (t === "light") return false;
         } catch (e) {}
-        return window.matchMedia("(prefers-color-scheme: dark)").matches; // no saved pref → follow OS
+        return false; // no saved preference → default to light
       }
       themeToggle.checked = isDarkNow();
       themeToggle.addEventListener("change", () => {
