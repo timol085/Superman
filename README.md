@@ -3,7 +3,7 @@
 A small application for analysing **split times** from multi‑stage orienteering
 competitions. It builds a virtual runner called **Superman**, the fastest split
 on every leg combined into one ideal race and shows how far each real runner
-falls behind that ideal, per stage and across the whole competition. The data for this project is manually written and comes from the H60 class at O-Ringen 2026 in Gothenburg. Note that this is not an original idea, and this function already exists in the product [Winsplits Pro](https://obasen.orientering.se/winsplits/?lang=en).
+falls behind that ideal, per stage and across the whole competition. The data for this project is manually written and comes from the H60 class at O-Ringen 2026 in Gothenburg. Note that this is not an original idea, and this function already exists in the product [Winsplits Pro](https://obasen.orientering.se/winsplits/?lang=en). This mini project was simply to show my fathers way to victory in the H60 class.
 
 **Live:** https://timol085.github.io/Superman/
 
