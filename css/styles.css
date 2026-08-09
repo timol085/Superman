@@ -98,6 +98,31 @@
         border-color: var(--muted);
       }
 
+      .segmented {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .segmented button {
+        font: inherit;
+        border: 0;
+        background: var(--surface-1);
+        color: var(--text-secondary);
+        padding: 7px 12px;
+        cursor: pointer;
+      }
+      .segmented button + button {
+        border-left: 1px solid var(--border);
+      }
+      .segmented button:hover {
+        color: var(--text-primary);
+      }
+      .segmented button.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
       .theme-wrap {
         display: flex;
         align-items: center;

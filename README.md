@@ -52,6 +52,12 @@ total beneath, so the value under _Etapp 5_ is the overall time:
 
 ![Combined table](screenshots/table-combined.png)
 
+**Versus the leader** — an alternative baseline: instead of Superman, the 0‑line
+is whoever is _leading at that control_. The leader can change along the course,
+so several runners can touch 0 and no line ever rises above it:
+
+![Graph versus the current leader](screenshots/graph-leader.png)
+
 ---
 
 ## Features
@@ -62,10 +68,13 @@ total beneath, so the value under _Etapp 5_ is the overall time:
   overall standings table.
 - **Manual or automatic Superman** — give Superman's fastest field splits per
   leg, or leave a leg blank to auto‑use the fastest of the loaded runners.
+- **Compare against** (_Superman_ / _Bästa löpare_) — switch the graph's 0‑line
+  between Superman (the ideal race) and the **current leader** — whoever holds
+  the lowest cumulative time at each control, which can change along the course.
 - **Extra runners** — add anyone beyond the core four to a single stage; they
   appear in that stage only and never in the Combined summary.
 - **Hover tooltip** — a crosshair snaps to the nearest control and lists every
-  runner's time behind Superman there.
+  runner's time behind the baseline there.
 - **Light / dark** toggle (defaults to light).
 - **No backend, no build step** — plain HTML, CSS and JavaScript. Data lives in
   JSON files you edit by hand.

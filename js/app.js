@@ -26,6 +26,12 @@
         err: "not loaded yet",
       }));
       let activeTab = 0;
+      // Graph baseline: "superman" (ideal) or "best" (fastest actual runner).
+      let refMode = "superman";
+      try {
+        const rm = localStorage.getItem("superman.refmode");
+        if (rm === "superman" || rm === "best") refMode = rm;
+      } catch (e) {}
 
       // ---------- parsing / formatting ----------
       function parseSplit(str) {
@@ -217,6 +223,11 @@
         return coreRoster().concat(extras);
       }
 
+      // Builds each runner's cumulative time behind the baseline, control by
+      // control. The baseline at each control is either Superman's cumulative
+      // (mode "superman") or the CURRENT LEADER — the smallest cumulative time
+      // among the runners at that control (mode "best"). In "best" mode the
+      // leader can change along the course, so whoever leads sits at 0 there.
       function computeSeries(stageIdxList, roster) {
         const lines = roster.map((r) => ({
           name: r.name,
@@ -225,36 +236,76 @@
           getRaw: r.getRaw,
           pts: [{ x: 0, behind: 0 }],
           broken: false,
-          cum: 0,
+          cumElapsed: 0, // actual running time so far
         }));
+        const bestMode = refMode === "best";
+
         const columns = [{ x: 0 }];
         const boundaries = [];
         const stageSpans = [];
         let x = 0;
+        let supCum = 0, // Superman's cumulative (for "superman" mode)
+          supBroken = false;
 
         stageIdxList.forEach((si, k) => {
           const st = stages[si];
           const startX = x;
           for (let c = 0; c < st.numControls; c++) {
             x++;
-            const sup = supermanForLeg(st, c);
             columns.push({ x, stage: si, ctrl: c + 1 });
+
+            // 1. advance each runner's actual elapsed time
             for (const ln of lines) {
               if (ln.broken) continue;
               const v = parseSplit(ln.getRaw(si, c));
-              if (v == null || sup == null) {
+              if (v == null) {
                 ln.broken = true;
                 continue;
               }
-              ln.cum += v - sup;
-              ln.pts.push({ x, behind: ln.cum, stage: si, ctrl: c + 1 });
+              ln.cumElapsed += v;
+            }
+
+            // 2. baseline cumulative time at this control
+            let baseCum;
+            if (bestMode) {
+              baseCum = Infinity;
+              for (const ln of lines)
+                if (!ln.broken) baseCum = Math.min(baseCum, ln.cumElapsed);
+              if (!isFinite(baseCum)) baseCum = null;
+            } else {
+              const sup = supermanForLeg(st, c);
+              if (sup == null) supBroken = true;
+              else if (!supBroken) supCum += sup;
+              baseCum = supBroken ? null : supCum;
+            }
+
+            // 3. plot each runner's gap to the baseline (0 = at the front)
+            for (const ln of lines) {
+              if (ln.broken) continue;
+              if (baseCum == null) {
+                ln.broken = true;
+                continue;
+              }
+              ln.pts.push({
+                x,
+                behind: ln.cumElapsed - baseCum,
+                stage: si,
+                ctrl: c + 1,
+              });
             }
           }
           stageSpans.push({ stage: si, startX, endX: x });
           if (k < stageIdxList.length - 1) boundaries.push(x);
         });
 
-        return { lines, columns, boundaries, stageSpans, totalLegs: x };
+        return {
+          lines,
+          columns,
+          boundaries,
+          stageSpans,
+          totalLegs: x,
+          mode: refMode,
+        };
       }
 
       // ---------- geometry ----------
@@ -365,13 +416,17 @@
           );
         }
 
+        // Baseline at 0. In Superman mode draw the dedicated ideal line; in
+        // Best mode the 0-line is the current leader, so no fixed baseline line.
         const y0 = sc.yOf(0);
-        parts.push(
-          `<line x1="${M.left}" y1="${y0}" x2="${M.left + PW}" y2="${y0}" stroke="var(--text-primary)" stroke-width="2" stroke-linecap="round"/>`,
-        );
-        parts.push(
-          `<text x="${M.left + PW + 8}" y="${y0 + 4}" font-size="12.5" font-weight="600" fill="var(--text-primary)">Superman</text>`,
-        );
+        if (series.mode === "superman") {
+          parts.push(
+            `<line x1="${M.left}" y1="${y0}" x2="${M.left + PW}" y2="${y0}" stroke="var(--text-primary)" stroke-width="2" stroke-linecap="round"/>`,
+          );
+          parts.push(
+            `<text x="${M.left + PW + 8}" y="${y0 + 4}" font-size="12.5" font-weight="600" fill="var(--text-primary)">Superman</text>`,
+          );
+        }
 
         const endLabels = [];
         for (const ln of series.lines) {
@@ -415,12 +470,16 @@
         renderLegend(series);
         attachHover(svg, series, sc, combined);
 
-        document.getElementById("chartTitle").textContent = combined
-          ? "Total — versus Superman"
-          : `Etapp ${activeTab + 1} — versus Superman`;
+        const baselineLabel =
+          series.mode === "best" ? "ledaren" : "Superman";
+        const scopeLabel = combined ? "Total" : `Etapp ${activeTab + 1}`;
+        document.getElementById("chartTitle").textContent =
+          `${scopeLabel} — versus ${baselineLabel}`;
+        const refWord =
+          series.mode === "best" ? "the current leader" : "the ideal race";
         document.getElementById("chartSub").textContent = combined
-          ? "Cumulative time behind the ideal race across all 5 stages (seconds)"
-          : "Time behind the ideal race, cumulative (seconds)";
+          ? `Cumulative time behind ${refWord} across all 5 stages (seconds)`
+          : `Time behind ${refWord}, cumulative (seconds)`;
       }
 
       function renderLegend(series) {
@@ -435,7 +494,8 @@
           span.appendChild(document.createTextNode(name));
           return span;
         };
-        el.appendChild(mk("var(--text-primary)", "Superman"));
+        if (series.mode === "superman")
+          el.appendChild(mk("var(--text-primary)", "Superman"));
         for (const ln of series.lines) el.appendChild(mk(ln.color, ln.name));
       }
 
@@ -514,7 +574,8 @@
             row.appendChild(val);
             tooltip.appendChild(row);
           };
-          addRow("var(--text-primary)", "Superman", "0");
+          if (series.mode === "superman")
+            addRow("var(--text-primary)", "Superman", "0");
           for (const r of rows) addRow(r.color, r.name, fmtBehind(r.behind));
 
           const wr = wrap.getBoundingClientRect();
@@ -801,6 +862,25 @@
           localStorage.setItem(THEME_KEY, mode);
         } catch (e) {}
       });
+
+      // ---------- reference toggle (Superman vs best runner) ----------
+      const refToggle = document.getElementById("refToggle");
+      function paintRefToggle() {
+        refToggle.querySelectorAll("button").forEach((b) => {
+          b.classList.toggle("active", b.dataset.ref === refMode);
+        });
+      }
+      refToggle.addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b || b.dataset.ref === refMode) return;
+        refMode = b.dataset.ref;
+        try {
+          localStorage.setItem("superman.refmode", refMode);
+        } catch (err) {}
+        paintRefToggle();
+        renderChart();
+      });
+      paintRefToggle();
 
       // ---------- events ----------
       document
