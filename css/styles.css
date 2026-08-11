@@ -19,6 +19,7 @@
         --accent: var(--series-1);
         --warn-bg: #fdf3e0;
         --warn-bd: #eda100;
+        --hl: rgba(42, 120, 214, 0.12);
       }
       /* Light is the default theme. Dark applies only when the user turns it
          on (data-theme="dark") — the OS setting no longer forces dark. */
@@ -42,6 +43,7 @@
         --series-8: #e66767;
         --warn-bg: #2a2412;
         --warn-bd: #c98500;
+        --hl: rgba(57, 135, 229, 0.22);
       }
 
       * {
@@ -275,6 +277,11 @@
       td.cum {
         text-align: center;
         min-width: 58px;
+      }
+      /* column highlighted while hovering the matching control in the graph */
+      th.hl,
+      td.hl {
+        background: var(--hl);
       }
       td.val {
         font-variant-numeric: tabular-nums;

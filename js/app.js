@@ -515,10 +515,29 @@
           return Math.max(0, Math.min(total, Math.round(raw)));
         }
 
+        // Highlight the matching table column: a control column on a stage
+        // tab, the stage (Etapp) column on the Combined tab.
+        const hlTableId = combined ? "combinedTable" : "dataTable";
+        function clearHighlight() {
+          document
+            .querySelectorAll("#dataTable .hl, #combinedTable .hl")
+            .forEach((e) => e.classList.remove("hl"));
+        }
+        function highlightColumn(key) {
+          clearHighlight();
+          if (key == null) return;
+          document
+            .querySelectorAll(`#${hlTableId} [data-c="${key}"]`)
+            .forEach((e) => e.classList.add("hl"));
+        }
+
         function move(ev) {
           const xi = nearestX(ev.clientX);
           const col =
             series.columns.find((c) => c.x === xi) || series.columns[0];
+          highlightColumn(
+            xi === 0 ? null : combined ? col.stage + 1 : col.ctrl,
+          );
           const x = sc.xOf(xi);
           hoverLayer.style.display = "";
           crossline.setAttribute("x1", x);
@@ -589,6 +608,7 @@
         function leave() {
           hoverLayer.style.display = "none";
           tooltip.style.opacity = "0";
+          clearHighlight();
         }
         capture.addEventListener("pointermove", move);
         capture.addEventListener("pointerleave", leave);
@@ -626,10 +646,10 @@
 
       // ---------- read-only stage table ----------
       // ---- shared table cell/row builders ----
-      const legCell = (text, blank, auto) =>
-        `<td class="val${blank ? " blank" : ""}">${auto ? `<span class="auto">${esc(text)}</span>` : esc(text)}</td>`;
-      const cumCell = (text, blank) =>
-        `<td class="cum${blank ? " blank" : ""}">${esc(text)}</td>`;
+      const legCell = (text, blank, auto, ci) =>
+        `<td class="val${blank ? " blank" : ""}" data-c="${ci}">${auto ? `<span class="auto">${esc(text)}</span>` : esc(text)}</td>`;
+      const cumCell = (text, blank, ci) =>
+        `<td class="cum${blank ? " blank" : ""}" data-c="${ci}">${esc(text)}</td>`;
 
       // Emit an entity as two rows: values on top, cumulative total beneath.
       function pushEntity(color, name, legValues, note) {
@@ -639,18 +659,20 @@
         body2.push(
           `<tr class="leg-row"><td rowspan="2"><span class="swatch" style="background:${color}"></span></td><td class="name">${nameCell}</td>`,
         );
-        legValues.forEach((v) => body2.push(legCell(v.text, v.blank, v.auto)));
+        legValues.forEach((v, i) =>
+          body2.push(legCell(v.text, v.blank, v.auto, i + 1)),
+        );
         body2.push(`</tr>`);
         body2.push(`<tr class="cum-row"><td class="name"></td>`);
         let cum = 0,
           broken = false;
-        legValues.forEach((v) => {
+        legValues.forEach((v, i) => {
           if (broken || v.sec == null) {
             broken = true;
-            body2.push(cumCell("–", true));
+            body2.push(cumCell("–", true, i + 1));
           } else {
             cum += v.sec;
-            body2.push(cumCell(fmtClock(cum), false));
+            body2.push(cumCell(fmtClock(cum), false, i + 1));
           }
         });
         body2.push(`</tr>`);
@@ -683,7 +705,7 @@
 
         const head = ["<thead><tr><th></th><th>Runner</th>"];
         for (let s = 1; s <= NUM_STAGES; s++)
-          head.push(`<th class="val">Etapp ${s}</th>`);
+          head.push(`<th class="val" data-c="${s}">Etapp ${s}</th>`);
         head.push("</tr></thead>");
 
         // Superman total per stage (its ideal race = sum of fastest legs)
@@ -761,7 +783,7 @@
         const head = ["<thead><tr><th></th><th>Runner</th>"];
         for (let c = 1; c <= st.numControls; c++)
           head.push(
-            `<th class="val">${c === st.numControls ? "M" : "K" + c}</th>`,
+            `<th class="val" data-c="${c}">${c === st.numControls ? "M" : "K" + c}</th>`,
           );
         head.push("</tr></thead>");
 
